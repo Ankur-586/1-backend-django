@@ -29,6 +29,7 @@ handler404 = custom_page_not_found_view
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('user_auth.urls')),
+    path('api/',include('user_profile.urls')),
     path('api/',include('category.urls')),
     path('api/',include('product.urls')),
     path('api/',include('order.urls')),
