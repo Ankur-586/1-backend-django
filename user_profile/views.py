@@ -1,10 +1,28 @@
 from django.shortcuts import render
 
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import UserProfile
-from .serializers import UserProfileSerialziers
+from .serializers import UserProfileSerializers, UserAddressSerializers
 
-class UserProfile(viewsets.ModelViewSet):
+class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
-    serializer_class = UserProfileSerialziers 
+    serializer_class = UserProfileSerializers 
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        # If the user is an admin, return all user profiles
+        if self.request.user.is_staff:
+            return UserProfile.objects.all()
+        # Otherwise, return only the authenticated user's profile
+        return UserProfile.objects.filter(user=self.request.user)
+    
+'''
+if self.request.user.is_staff:
+    print(True)
+else:
+    print(False)
+'''

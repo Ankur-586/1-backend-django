@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="user")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="user_info")
     profile_image = models.ImageField(upload_to="user_profile")
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -22,7 +22,7 @@ ADDRESS_TYPES = (
     )
 
 class User_Address(models.Model):
-    user = models.ForeignKey(UserProfile,on_delete=models.CASCADE)
+    user_profile = models.ForeignKey(UserProfile,on_delete=models.CASCADE,related_name="user_full_info")
     address_type = models.CharField(max_length=10, choices=ADDRESS_TYPES)
     house_number = models.CharField(max_length=10)
     address_line_1 = models.CharField(max_length=255)
@@ -44,5 +44,5 @@ class User_Address(models.Model):
         return f'''{self.house_number}, {self.address_line_1}, {self.address_line_2}, {self.city}, {self.state}, {self.postal_code}, {self.country}'''.strip()
                     
     def __str__(self):
-        return f'{self.user} Address'
+        return f'{self.user_profile} Address'
     

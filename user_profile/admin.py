@@ -7,7 +7,7 @@ class user_profile(admin.ModelAdmin):
 
 @admin.register(User_Address)
 class user_address(admin.ModelAdmin):
-    list_display = ['user', 'address_type', 'full_address']
+    list_display = ['user_profile', 'address_type', 'full_address']
     list_filter = ('country', 'state', 'address_type')
     search_fields = ('street_address', 'city', 'postal_code', 'user__user__username', 'user__user__email')
 

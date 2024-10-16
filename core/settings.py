@@ -160,16 +160,16 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ),
     # 'EXCEPTION_HANDLER': 'core.custom_handlers.custom_exception_handler',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    # 'DEFAULT_PERMISSION_CLASSES': [
-    #     'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
-    # ],
-    'DEFAULT_RESPONSE_CLASS': 'core.custome_response.CustomResponse'
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ),
+    # 'DEFAULT_AUTHENTICATION_CLASSES': (
+    #     'rest_framework_simplejwt.authentication.JWTAuthentication',
+    # ),
+    # 'DEFAULT_RESPONSE_CLASS': 'core.custome_response.CustomResponse'
 }
 
-JWT_CONF = {
+SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
