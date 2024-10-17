@@ -13,7 +13,7 @@ class VariantImageInline(admin.TabularInline):
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductVariantInline]
     prepopulated_fields = {'product_slug': ('name',)} #need to define slug inside producty field
-    list_display = ('name', 'price', 'tax', 'category','is_active','stock')
+    list_display = ('name', 'price', 'tax', 'category','is_active','product_stock')
     list_editable = ('is_active',)
     list_filter = ('available_on', 'updated_at', 'category', 'tags')
     search_fields = ('name', 'description', 'category__name', 'tags__name')
@@ -27,8 +27,8 @@ class ProductAttributeAdmin(admin.ModelAdmin):
 @admin.register(ProductVariants)
 class ProductVariantAdmin(admin.ModelAdmin):
     inlines = [VariantImageInline]
-    list_display = ('id', 'product', 'variant_name', 'sku', 'price', 'stock', 'availability_status', 'stock_availability_status', 'is_active')
-    list_editable = ('is_active','availability_status')
+    list_display = ('id', 'product', 'variant_name', 'sku', 'price', 'stock', 'proudct_variant_stock', 'is_active')
+    list_editable = ('is_active',)
     search_fields = ('product__name', 'variant_name')
 
 @admin.register(VariantImages)

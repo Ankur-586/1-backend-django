@@ -24,9 +24,6 @@ class UserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, required=True)
     first_name = serializers.CharField()
     last_name = serializers.CharField()
-    # user_role = RoleSerializer(read_only=True)
-    # user_role = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), write_only=True)
-    # last_login = serializers.SerializerMethodField()
 
     class Meta:
         '''

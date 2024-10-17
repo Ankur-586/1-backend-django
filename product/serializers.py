@@ -40,7 +40,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductVariants
-        fields = ['product', 'sku', 'variant_name', 'price', 'weight', 'stock', 'stock_availability_status', 'variant_images']
+        fields = ['product', 'sku', 'variant_name', 'price', 'weight', 'stock', 'proudct_variant_stock', 'variant_images']
 
 class ProductSerializer(serializers.ModelSerializer):
     
@@ -68,6 +68,6 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id','created_at','updated_at','thumbnail','name','description','product_slug','tax',
-                  'variant_mages','category','variants','tags','stock','meta','minimum_order_quantity','maximum_order_quantity']
+                  'variant_mages','category','variants','tags','product_stock','meta','minimum_order_quantity','maximum_order_quantity']
     
     

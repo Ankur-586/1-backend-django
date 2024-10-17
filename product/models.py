@@ -72,7 +72,7 @@ class Product(models.Model):
     minimum_order_quantity = models.IntegerField()
     maximum_order_quantity = models.IntegerField()
     is_active = models.BooleanField(default=True)
-    availability_status = models.BooleanField(default=True)
+    # availability_status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -85,8 +85,8 @@ class Product(models.Model):
         return self.price
     
     @property
-    def stock(self):
-        if self.availability_status == True:
+    def product_stock(self):
+        if self.is_active == True:
             return 'Instock'
         return 'Out Of Stock'
     
@@ -106,14 +106,14 @@ class ProductVariants(models.Model):
     variant_quantity = models.IntegerField(default=1)
     stock = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
-    availability_status = models.BooleanField(default=True)
+    # availability_status = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.variant_name} of {self.product}"
     
     @property
-    def stock_availability_status(self):
-        if self.availability_status == True:
+    def proudct_variant_stock(self):
+        if self.is_active == True:
             return 'Instock'
         return 'Out Of Stock'
     

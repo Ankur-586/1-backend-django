@@ -8,7 +8,7 @@ from .models import UserProfile
 from .serializers import UserProfileSerializers, UserAddressSerializers
 
 class UserProfileViewSet(viewsets.ModelViewSet):
-    queryset = UserProfile.objects.all()
+    queryset = UserProfile.objects.all().order_by('-id')
     serializer_class = UserProfileSerializers 
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -19,7 +19,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             return UserProfile.objects.all()
         # Otherwise, return only the authenticated user's profile
         return UserProfile.objects.filter(user=self.request.user)
-    
+     
 '''
 if self.request.user.is_staff:
     print(True)
