@@ -72,7 +72,6 @@ class Product(models.Model):
     minimum_order_quantity = models.IntegerField()
     maximum_order_quantity = models.IntegerField()
     is_active = models.BooleanField(default=True)
-    # availability_status = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -106,7 +105,6 @@ class ProductVariants(models.Model):
     variant_quantity = models.IntegerField(default=1)
     stock = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
-    # availability_status = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.variant_name} of {self.product}"

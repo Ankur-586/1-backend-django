@@ -54,7 +54,7 @@ class CartItemPostSerializer(serializers.ModelSerializer):
     def validate(self, data):
         variant_id = data.get('variant_id')
         variant = ProductVariants.objects.get(pk=variant_id.pk)
-        if variant.availability_status == False:
+        if variant.is_active == False:
             raise CustomValidation("The selected variant is out of stock.")
         return data
 
