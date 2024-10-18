@@ -133,56 +133,9 @@ class VariantImages(models.Model):
         verbose_name_plural = 'Variant Images'
         
 
-
-# class CartItemSerializer(serializers.ModelSerializer):
-#     variant = serializers.SerializerMethodField()
-#     cart_id = serializers.UUIDField(required=False, allow_null=True)
-#     #variant_id = serializers.PrimaryKeyRelatedField(queryset=ProductVariants.objects.all())
-#     class Meta:
-#         model = CartItem
-#         fields = ['variant',]
-    
-#     def get_variant(self, obj):
-#         '''
-#         obj : cart_item_id
-#         '''
-#         product_variant = obj.variant
-#         variant_name = product_variant.variant_name
-#         # print('variant,product',variant,product)
-#         thumbnail = product_variant.images.first().image.url if product_variant.images.exists() else None
-
-#         return {
-#             'id': product_variant.pk,
-#             'product_name': variant_name,
-#             'price': product_variant.price,
-#             'quantity': obj.quantity,
-#             'total': product_variant.price * obj.quantity,
-#             'thumbnail': thumbnail
-#         }
-    
-#     def create(self, validated_data):
-#         request = self.context['request']
-#         user = request.user if request.user.is_authenticated else None
-        
-#         # For non-logged-in users, use session ID
-#         if user is None:
-#             session = request.session
-#             cart_id = session.get('cart_id', None)
-#             if cart_id:
-#                 cart = Cart.objects.get(cart_id=cart_id)
-#             else:
-#                 cart = Cart.objects.create()
-#                 session['cart_id'] = str(cart.cart_id)
-#         else:
-#             # Check if a cart already exists for the logged-in user
-#             cart, created = Cart.objects.get_or_create(user=user)
-        
-#         validated_data['cart_id'] = cart
-        
-#         # Calculate the price based on the variant, if not already provided
-#         if not validated_data.get('price'):
-#             validated_data['price'] = validated_data['variant'].price
-         
-#         # Create the CartItem
-#         cart_item = CartItem.objects.create(**validated_data)
-#         return cart_item
+# Cart Functionality with poduct variants without using seesion Django Rest Framework
+'''
+when cart is created ny the anaymous user in the frontend 
+1. i want tha tif user is none then the cart should get created an when user is found then it should get binded to thatuser.
+Now my quewstion is. thta the cart id will be send to the bakend by the frontend. but the id will 1st get created on the backend then
+'''

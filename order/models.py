@@ -2,6 +2,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 
+import uuid
+
 from user_profile.models import UserProfile, User_Address
 from product.models import ProductVariants
 from cart.models import Cart
@@ -14,13 +16,13 @@ STATUS_CHOICES = [
 ]
 
 def create_order_id():
-    static_part = 'MYECOMM'
+    static_part = 'ord_'
     last_order = Order.objects.all().order_by('id').last()
     if not last_order:
         new_order_number = 1
     else:
         last_order_number = int(last_order.order_id[len(static_part):])
-        new_order_number = last_order_number + 1
+        new_order_number = last_order_number + uuid
     order_id = f"{static_part}{new_order_number:02d}"
     return order_id
 
