@@ -12,7 +12,7 @@ from .serializers import *
 #     serializer_class = CategorySerializer
 
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.filter(Q(is_active=False)).order_by('created_at')
+    queryset = Product.objects.filter(Q(is_active=True)).order_by('created_at')
     serializer_class = ProductSerializer
 
     def list(self, request, *args, **kwargs):

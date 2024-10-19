@@ -6,6 +6,9 @@ from django.utils import timezone
 from core.utils import CustomValidation
 
 class CartItemSerializer(serializers.ModelSerializer):
+    '''
+    This serializer is being used in the CartSerializer Below
+    '''
     variant = serializers.SerializerMethodField()
     variant_id = serializers.PrimaryKeyRelatedField(queryset=ProductVariants.objects.all(), write_only=True)
     # quantity = serializers.IntegerField()

@@ -32,23 +32,28 @@ class CartViewSet(generics.RetrieveAPIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 class CartItemPostSet(viewsets.ModelViewSet):
-    
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = CartItem.objects.all()
     serializer_class = CartItemPostSerializer 
-    # authentication_classes = [JWTAuthentication]
-    # permission_classes = [IsAuthenticated]
     # permission_classes = [AllowAny]
-    http_method_names = ['post', 'head']
+    http_method_names = ['post']
     
     def create(self, request, *args, **kwargs):
+        user = request.user if request.user.is_authenticated else None
         cart_id = self.kwargs.get('cart_id')
-
-        # Get or create the cart
-        cart, created = Cart.objects.get_or_create(cart_id=cart_id)
+        print(user.user_info.user_full_info.first().full_address)
+        if user:
+            # If user is authenticated, associate the cart with the user
+            cart, created = Cart.objects.get_or_create(user=user, cart_id=cart_id)
+        else:
+            # If the user is a guest, create a cart without a user association
+            cart, created = Cart.objects.get_or_create(cart_id=cart_id, user=None)
 
         # Validate and save each item in the request
         items_data = request.data.get('items', [])
         response_data = []
+        response_data_1 = []
         
         for item_data in items_data:
             item_serializer = CartItemPostSerializer(data=item_data)
@@ -65,15 +70,27 @@ class CartItemPostSet(viewsets.ModelViewSet):
                 )
                 cart_item.save()
                 
-                response_data.append({
+                response_data_1.append({
                     "cart_id": cart.cart_id,  # Assuming cart has a UUID field
-                    "variant_id": cart_item.variant.pk,
-                    "variant_name": cart_item.variant.variant_name,  # Update this according to your model
-                    "variant_image": cart_item.variant.images.first().image.url if cart_item.variant.images.exists() else None,
+                    "created_at": cart.created_at,
+                    "updated_at": cart.updated_at,
+                    "variant" : {
+                        "variant_id": cart_item.variant.pk,
+                        "variant_name": cart_item.variant.variant_name,  # Update this according to your model
+                        "variant_image": cart_item.variant.images.first().image.url if cart_item.variant.images.exists() else None,
+                    },
                     "quantity": cart_item.quantity,
                     "price": cart_item.price,
                     "total_price": cart_item.calculate_price()
                 })
+                response_data = {
+                    'cart_id' : cart.cart_id,
+                    "created_at": cart.created_at,
+                    "updated_at": cart.updated_at,
+                    "customer": user,
+                    # "shipping_address": user.user_profile.user_full_info.address_type,
+                    "items" : response_data_1
+                }
                 
             else:
                 return Response({
@@ -85,11 +102,49 @@ class CartItemPostSet(viewsets.ModelViewSet):
         return Response({
             'status': status.HTTP_201_CREATED,
             'message': 'Items added to cart successfully.', 
-            'items': response_data
+            'cart': response_data
             }, status=status.HTTP_201_CREATED)
+        
+class AssociateUserWithCart(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+    lookup_field = 'cart_id'
 
+    def perform_create(self, serializer):
+        # Automatically associate the cart with the authenticated user
+        serializer.save(user=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        # Fetch the cart object
+        cart = self.get_object()
+
+        # Only allow updating the user if the cart is not already linked to a user
+        if cart.user and cart.user != request.user:
+            return Response(
+                {"detail": "This cart is already associated with another user."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Associate the cart with the authenticated user
+        cart.user = request.user
+        cart.save()
+
+        serializer = self.get_serializer(cart)
+        
+        response = {
+            'status': status.HTTP_200_OK,
+            'messgae': 'User Binded with cart',
+            'data': serializer.data 
+        }
+        return Response(response, status=status.HTTP_200_OK)
 
 '''
+if suppose i want this view to work for guest and authentciated users both. If there is no token then consider the user as guest and if there is token then consider assocaite 
+the user to that cart
+
+
 i want the list method to only show data based on cart it. wul pass cart id to the url and then fetch that cart details using the cart id
 when i create a cart, item should be added to it
 def create(self, request, *args, **kwargs):

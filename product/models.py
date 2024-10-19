@@ -132,6 +132,11 @@ class VariantImages(models.Model):
         verbose_name = 'Variant Image'                                               
         verbose_name_plural = 'Variant Images'
         
+'''
+NOTE:
+Make product variant reverse feature
+'''
+
 
 # Cart Functionality with poduct variants without using seesion Django Rest Framework
 '''
