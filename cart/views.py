@@ -41,8 +41,9 @@ class CartItemPostSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         user = request.user if request.user.is_authenticated else None
+        print(user.user_info, user)
+        
         cart_id = self.kwargs.get('cart_id')
-        print(user.user_info.user_full_info.first().full_address)
         if user:
             # If user is authenticated, associate the cart with the user
             cart, created = Cart.objects.get_or_create(user=user, cart_id=cart_id)
@@ -87,8 +88,8 @@ class CartItemPostSet(viewsets.ModelViewSet):
                     'cart_id' : cart.cart_id,
                     "created_at": cart.created_at,
                     "updated_at": cart.updated_at,
-                    "customer": user,
-                    # "shipping_address": user.user_profile.user_full_info.address_type,
+                    "user": user.username,
+                    # "shipping_address": user.user_info,
                     "items" : response_data_1
                 }
                 
