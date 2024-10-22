@@ -6,17 +6,13 @@ from django.http import JsonResponse
 
 class CustomValidation(APIException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-    default_detail = 'A server error occurred..'
+    default_detail = 'A server error occurred.'
 
-    def __init__(self, detail=None, status_code=None):
-        # Set status_code if provided, else use default
-        if status_code is not None:
-            self.status_code = status_code
-        
-        # Set detail if provided, else use default
+    def __init__(self, detail, status_code):
+        if status_code is not None:self.status_code = status_code
         if detail is not None:
             self.detail = force_str(detail)
-        else:
+        else: 
             self.detail = {'detail': force_str(self.default_detail)}
 
 def custom_page_not_found_view(request, exception=None):
@@ -63,4 +59,18 @@ class ResourceNotFound(APIException):
             self.default_code = code
         super().__init__(detail=self.detail, code=self.default_code)
 ----------------------------------------------------------
+class CustomValidation(APIException):
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = 'A server error occurred..'
+
+    def __init__(self, detail=None, status_code=None):
+        # Set status_code if provided, else use default
+        if status_code is not None:
+            self.status_code = status_code
+        
+        # Set detail if provided, else use default
+        if detail is not None:
+            self.detail = force_str(detail)
+        else:
+            self.detail = {'detail': force_str(self.default_detail)}
 '''

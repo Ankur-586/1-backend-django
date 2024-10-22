@@ -1,5 +1,4 @@
-from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework import serializers,status
 
 from .models import Cart, CartItem
 from product.models import ProductVariants
@@ -76,18 +75,18 @@ class CartItemPostSerializer(serializers.ModelSerializer):
     
     def validate_quantity(self, value):
         if value is None:
-            raise CustomValidation("Quantity is required")
+            raise CustomValidation("Quantity is required",)
         if value < 1:
-            raise CustomValidation("Quantity must be at least 1.")
+            raise CustomValidation("Quantity must be at least 1.", status_code=status.HTTP_400_BAD_REQUEST)
         elif value > 5:
-            raise CustomValidation("Quantity can't be at more than 5")
+            raise CustomValidation("Quantity can't be at more than 5", status_code=status.HTTP_400_BAD_REQUEST)
         return value
     
-    # def validate_variant(self, value):
-    #     print('value:',value)
-    #     if not ProductVariants.objects.filter(pk=111).exists():
-    #         raise CustomValidation("No product with the given ID was found.")
-    #     return value
+    def validate_variant(self, data):
+        print('value:',data)
+        # if not ProductVariants.objects.filter(pk=111).exists():
+        #     raise CustomValidation("No product with the given ID was found.", status_code=status.HTTP_400_BAD_REQUEST)
+        # return value
     
     # def validate(self, data):
     #     print(data)
@@ -103,12 +102,12 @@ class CartItemPostSerializer(serializers.ModelSerializer):
         
     #     return data
 
-    # def to_internal_value(self, data):
-    #     variant_id = data.get('variant_id')
-    #     print(variant_id)
-    #     if not ProductVariants.objects.filter(pk=variant_id).exists():
-    #         raise CustomValidation("No product with the given id was found")
-    #     return super().to_internal_value(data)
+    def to_internal_value(self, data):
+        variant_id = data.get('variant_id')
+        print(variant_id)
+        if not ProductVariants.objects.filter(pk=variant_id).exists():
+            raise CustomValidation("No product with the given id was found",status_code=status.HTTP_400_BAD_REQUEST)
+        return super().to_internal_value(data)
     
     # def validate(self, data):
     #     variant_id = data.get('variant_id')

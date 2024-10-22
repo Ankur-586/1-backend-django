@@ -41,7 +41,6 @@ class CartItemPostSet(viewsets.ModelViewSet):
     http_method_names = ['post']
     
     def create(self, request, *args, **kwargs):
-        print("Incoming data:", request.data)
         user = request.user if request.user.is_authenticated else None
         cart_id = self.kwargs.get('cart_id')
         # Get or create the cart
@@ -80,7 +79,6 @@ class CartItemPostSet(viewsets.ModelViewSet):
                     "total_price": cart_item.calculate_price()
                 })
             else:
-                print(item_serializer.errors)
                 return Response({
                     'status': status.HTTP_400_BAD_REQUEST,
                     'message': item_serializer.errors,

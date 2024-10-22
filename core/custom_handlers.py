@@ -4,6 +4,25 @@ from rest_framework import status
 from core.utils import CustomValidation
 
 def custom_exception_handler(exc, context):
+
+    response = exception_handler(exc, context)
+
+    try:
+        rep_status = response.status_code
+    except Exception as e:
+        rep_status = status.HTTP_500_INTERNAL_SERVER_ERROR
+        
+    if isinstance(exc, CustomValidation):
+        exc_list = str(exc).split("DETAIL: ")
+    else:
+        exc_list = [f"{field.capitalize()}{str(error[0]).replace('This', '')}" for field, error in response.data.items()]
+
+    return Response({"status":rep_status, 
+                     "message": exc_list[-1] , 
+                     "data":{}}, status=rep_status)
+
+'''
+def custom_exception_handler(exc, context):
     # Call DRF's default exception handler first
     response = exception_handler(exc, context)
     # Set default status code
@@ -32,54 +51,6 @@ def custom_exception_handler(exc, context):
             "message": "An unexpected error occurred",
             "data": {}
         }, status=rep_status)
-
-'''
-def custom_exception_handler(exc, context):
-    # """
-    # Custom exception handler for Django REST framework.
-
-    # This function extends the default exception handling provided by DRF to include custom error formatting.
-    # """
-    # Call DRF's default exception handler
-    response = exception_handler(exc, context)
-
-    if response is None:
-        # Fallback response if DRF's default handler does not handle the exception
-        return Response({
-            "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
-            "message": "An unexpected error occurred.",
-            "data": []
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Retrieve the status code from the response object
-    rep_status = response.status_code
-
-    # Check the type of exception to handle specific cases
-    if isinstance(exc, CustomValidation):
-        # Handle custom server errors
-        exc_list = str(exc).split("DETAIL: ")
-        message = exc_list[-1] if len(exc_list) > 1 else "Validation error occurred."
-    else:
-        # Handle validation errors from DRF
-        if isinstance(response.data, dict):
-            exc_list = []
-            for field, errors in response.data.items():
-                if isinstance(errors, list):
-                    error_messages = [str(err) for err in errors]
-                else:
-                    error_messages = [str(errors)]
-                exc_list.append(f"{field.capitalize()}: {', '.join(error_messages).replace('This', '')}")
-            message = ' '.join(exc_list) if exc_list else "An error occurred."
-        else:
-            message = "An unexpected error occurred."
-    
-    # Purpose: This line constructs and returns a custom Response object with the formatted error message and the appropriate status code.
-    
-    return Response({
-        "status": rep_status,
-        "message": message,
-        "data": {}
-    }, status=rep_status)
 '''
 # ---------------------------------------------------------------------------------
 '''
