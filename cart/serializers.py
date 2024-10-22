@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+
 from .models import Cart, CartItem
 from product.models import ProductVariants
 from django.utils import timezone
@@ -81,18 +83,26 @@ class CartItemPostSerializer(serializers.ModelSerializer):
             raise CustomValidation("Quantity can't be at more than 5")
         return value
     
-    def validate(self, data):
-        variant_id = data.get('variant')
-        try:
-            variant = ProductVariants.objects.get(pk=variant_id.pk)
-        except ProductVariants.DoesNotExist:
-            raise CustomValidation("No product with the given ID was found.")
-
-        if not variant.is_active:
-            raise CustomValidation("The selected variant is out of stock.")
-        
-        return data
+    # def validate_variant(self, value):
+    #     print('value:',value)
+    #     if not ProductVariants.objects.filter(pk=111).exists():
+    #         raise CustomValidation("No product with the given ID was found.")
+    #     return value
     
+    # def validate(self, data):
+    #     print(data)
+    #     variant_id = data.get('variant')
+    #     print(variant_id)
+    #     variant = ProductVariants.objects.filter(pk=variant_id).exists()
+        
+    #     if not variant.id:
+    #         raise CustomValidation("No product with the given ID was found.")
+
+    #     if not variant.is_active:
+    #         raise CustomValidation("The selected variant is out of stock.")
+        
+    #     return data
+
     # def to_internal_value(self, data):
     #     variant_id = data.get('variant_id')
     #     print(variant_id)

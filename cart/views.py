@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from django.shortcuts import get_object_or_404
+
 from product.models import ProductVariants
 from .models import Cart, CartItem
 from .serializers import CartSerializer, CartItemPostSerializer
@@ -33,80 +35,80 @@ class CartViewSet(generics.RetrieveAPIView):
 
 class CartItemPostSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
     queryset = CartItem.objects.all()
     serializer_class = CartItemPostSerializer 
-    # permission_classes = [AllowAny]
+    permission_classes = [AllowAny]
     http_method_names = ['post']
     
     def create(self, request, *args, **kwargs):
+        print("Incoming data:", request.data)
         user = request.user if request.user.is_authenticated else None
-        print(user.user_info, user)
-        
         cart_id = self.kwargs.get('cart_id')
-        if user:
-            # If user is authenticated, associate the cart with the user
-            cart, created = Cart.objects.get_or_create(user=user, cart_id=cart_id)
-        else:
-            # If the user is a guest, create a cart without a user association
-            cart, created = Cart.objects.get_or_create(cart_id=cart_id, user=None)
+        # Get or create the cart
+        cart, created = Cart.objects.get_or_create(user=user, cart_id=cart_id)
 
-        # Validate and save each item in the request
         items_data = request.data.get('items', [])
-        response_data = []
         response_data_1 = []
-        
+        cart_items = []
+
         for item_data in items_data:
             item_serializer = CartItemPostSerializer(data=item_data)
-            variant_id = item_data['variant']
-            
             if item_serializer.is_valid():
-                variant = ProductVariants.objects.get(pk=variant_id)  # Associate with the cart
+                variant_id = item_data['variant']
+                print('variant_id',variant_id)
+                variant = get_object_or_404(ProductVariants, pk=variant_id) 
                 
                 cart_item = CartItem(
-                    cart_id=cart,  # Correctly associate with the cart
+                    cart_id=cart,
                     variant=variant,
                     quantity=item_serializer.validated_data['quantity'],
-                    price=variant.price  # Set the price based on the variant
+                    price=variant.price
                 )
-                cart_item.save()
-                
+                cart_items.append(cart_item)
+
                 response_data_1.append({
-                    "cart_id": cart.cart_id,  # Assuming cart has a UUID field
+                    "cart_id": cart.cart_id,
                     "created_at": cart.created_at,
                     "updated_at": cart.updated_at,
-                    "variant" : {
+                    "variant": {
                         "variant_id": cart_item.variant.pk,
-                        "variant_name": cart_item.variant.variant_name,  # Update this according to your model
+                        "variant_name": cart_item.variant.variant_name,
                         "variant_image": cart_item.variant.images.first().image.url if cart_item.variant.images.exists() else None,
                     },
                     "quantity": cart_item.quantity,
                     "price": cart_item.price,
                     "total_price": cart_item.calculate_price()
                 })
-                response_data = {
-                    'cart_id' : cart.cart_id,
-                    "created_at": cart.created_at,
-                    "updated_at": cart.updated_at,
-                    "user": user.username,
-                    # "shipping_address": user.user_info,
-                    "items" : response_data_1
-                }
-                
             else:
+                print(item_serializer.errors)
                 return Response({
                     'status': status.HTTP_400_BAD_REQUEST,
-                    'message': item_serializer.errors, 
+                    'message': item_serializer.errors,
                     'data': []
                 }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Bulk create cart items
+        CartItem.objects.bulk_create(cart_items)
+
+        response_data = {
+            'cart_id': cart.cart_id,
+            "created_at": cart.created_at,
+            "updated_at": cart.updated_at,
+            "user": user.username if user else None,
+            "items": response_data_1
+        }
+
         return Response({
             'status': status.HTTP_201_CREATED,
-            'message': 'Items added to cart successfully.', 
+            'message': 'Items added to cart successfully.',
             'cart': response_data
-            }, status=status.HTTP_201_CREATED)
+        }, status=status.HTTP_201_CREATED)
         
 class AssociateUserWithCart(viewsets.ModelViewSet):
+    '''
+    This view binds the user to a particular cart id 
+    When the cart id is created without a user.
+    '''
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     queryset = Cart.objects.all()
@@ -124,9 +126,11 @@ class AssociateUserWithCart(viewsets.ModelViewSet):
         # Only allow updating the user if the cart is not already linked to a user
         if cart.user and cart.user != request.user:
             return Response(
-                {"detail": "This cart is already associated with another user."},
-                status=status.HTTP_403_FORBIDDEN
-            )
+                {
+                'status': status.HTTP_403_FORBIDDEN,
+                'message': "This cart is already associated with another user.",
+                'data': []
+                }, status=status.HTTP_403_FORBIDDEN)
 
         # Associate the cart with the authenticated user
         cart.user = request.user
