@@ -68,15 +68,15 @@ class Product(models.Model):
     tax = models.ForeignKey(Tax, on_delete=models.SET_NULL, null=True)
     meta_data = models.OneToOneField(Meta, on_delete=models.SET_NULL,related_name='product_meta',null=True,blank=True)
     thumbnail = models.ImageField(upload_to='thumbnails/')
-    tags = models.ManyToManyField(Tag, related_name='products')
-    minimum_order_quantity = models.IntegerField()
-    maximum_order_quantity = models.IntegerField()
+    tags = models.ManyToManyField(Tag, related_name='products', blank=True)
+    minimum_order_quantity = models.CharField(max_length=10, default=1)
+    maximum_order_quantity = models.CharField(max_length=10, default=5)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def price_with_tax(self):
-        if self.price is not None and self.tax:
+        if self.price is not None and self.tax: 
             tax_rate = self.tax.rate
             if tax_rate is not None:
                 tax_amount = (self.price * tax_rate) / (tax_rate + Decimal('100'))
@@ -101,7 +101,7 @@ class ProductVariants(models.Model):
     sku = models.CharField(max_length=10, unique=True)
     variant_name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    weight = models.CharField(max_length=10)
+    weight = models.CharField(max_length=10,  blank=True, null=True)
     variant_quantity = models.IntegerField(default=1)
     stock = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)

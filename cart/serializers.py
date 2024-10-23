@@ -82,40 +82,72 @@ class CartItemPostSerializer(serializers.ModelSerializer):
             raise CustomValidation("Quantity can't be at more than 5", status_code=status.HTTP_400_BAD_REQUEST)
         return value
     
-    def validate_variant(self, data):
-        print('value:',data)
-        # if not ProductVariants.objects.filter(pk=111).exists():
-        #     raise CustomValidation("No product with the given ID was found.", status_code=status.HTTP_400_BAD_REQUEST)
-        # return value
-    
-    # def validate(self, data):
-    #     print(data)
+
+    # def to_internal_value(self, data):
     #     variant_id = data.get('variant')
     #     print(variant_id)
-    #     variant = ProductVariants.objects.filter(pk=variant_id).exists()
-        
-    #     if not variant.id:
-    #         raise CustomValidation("No product with the given ID was found.")
-
-    #     if not variant.is_active:
-    #         raise CustomValidation("The selected variant is out of stock.")
-        
-    #     return data
-
-    def to_internal_value(self, data):
-        variant_id = data.get('variant_id')
-        print(variant_id)
-        if not ProductVariants.objects.filter(pk=variant_id).exists():
-            raise CustomValidation("No product with the given id was found",status_code=status.HTTP_400_BAD_REQUEST)
-        return super().to_internal_value(data)
+    #     if not ProductVariants.objects.filter(pk=variant_id).exists():
+    #         raise CustomValidation("No product with the given id was found", status_code=status.HTTP_400_BAD_REQUEST)
+    #     return super().to_internal_value(data)
     
-    # def validate(self, data):
-    #     variant_id = data.get('variant_id')
-    #     variant = ProductVariants.objects.get(pk=variant_id.id)
-    #     if variant.is_active == False:
-    #         raise CustomValidation("The selected variant is out of stock.")
-    #     return data
+    def validate_variant(self, value):
+        try:
+            variant = ProductVariants.objects.get(pk=value.pk)
+        except ProductVariants.DoesNotExist:
+            raise serializers.ValidationError("No product with the given ID was found.")
 
+        if not variant.is_active:
+            raise serializers.ValidationError("The selected variant is out of stock.")
+        
+        return value
+
+    def create(self, validated_data, user, cart_id):
+        # Get or create the cart
+        cart, created = Cart.objects.get_or_create(user=user, cart_id=cart_id)
+
+        # Collect items for bulk creation
+        cart_items = []
+        for item_data in validated_data:
+            variant = item_data.pop('variant')
+            cart_item = CartItem(
+                cart_id=cart,
+                variant=variant,
+                quantity=item_data['quantity'],
+                price=variant.price
+            )
+            cart_items.append(cart_item)
+
+        # Bulk create cart items
+        CartItem.objects.bulk_create(cart_items)
+
+        return cart
+
+    def get_response_data(self, cart, cart_items, user):
+        items_data = []
+        for cart_item in cart_items:
+            items_data.append({
+                "variant": {
+                    "variant_id": cart_item.variant.pk,
+                    "variant_name": cart_item.variant.variant_name,
+                    "variant_image": cart_item.variant.images.first().image.url if cart_item.variant.images.exists() else None,
+                    "product": {
+                        "category": cart_item.variant.product.category.category_name,
+                        "name": cart_item.variant.product.name,
+                    }
+                },
+                "quantity": cart_item.quantity,
+                "price": cart_item.price,
+                "total_price": cart_item.calculate_price(),
+            })
+
+        return {
+            'cart_id': cart.cart_id,
+            "created_at": cart.created_at,
+            "updated_at": cart.updated_at,
+            "user": user.username if user else None,
+            "items": items_data
+        }
+    
 '''
 def create(self, validated_data):
         request = self.context['request']

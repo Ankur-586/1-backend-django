@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, serializers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -19,7 +19,7 @@ class CartViewSet(generics.RetrieveAPIView):
         try:
             # Get the object based on the primary key provided in the URL
             instance = self.get_object()
-            serializer = self.get_serializer(instance)
+            serializer = self.get_serializer(instance) 
             payload = {
                 "status": status.HTTP_200_OK,
                 "message": 'Cart Detail',
@@ -43,6 +43,99 @@ class CartItemPostSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         user = request.user if request.user.is_authenticated else None
         cart_id = self.kwargs.get('cart_id')
+        
+        items_data = request.data.get('items', [])
+        response_data = []
+        errors = []
+
+        # Validate each item
+        for item_data in items_data:
+            item_serializer = self.get_serializer(data=item_data)
+            try:
+                item_serializer.is_valid(raise_exception=True)
+                response_data.append(item_serializer.validated_data)
+            except serializers.ValidationError as e:
+                # Capture the validation error messages
+                for field, messages in e.detail.items():
+                    for message in messages:
+                        errors.append(f"{field}: {message}")
+        if errors:
+            return Response({
+                'status': status.HTTP_400_BAD_REQUEST,
+                'message': errors,
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create items using the serializer
+        cart = self.get_serializer().create(response_data, user, cart_id)
+        # Generate the response data
+        cart_items = CartItem.objects.filter(cart_id=cart.cart_id)
+        response_data_final = self.get_serializer().get_response_data(cart, cart_items, user)
+
+        return Response({
+            'status': status.HTTP_201_CREATED,
+            'message': 'Items added to cart successfully.',
+            'cart': response_data_final
+        }, status=status.HTTP_201_CREATED)
+
+class AssociateUserWithCart(viewsets.ModelViewSet):
+    '''
+    This view binds the user to a particular cart id 
+    When the cart id is created without a user.
+    '''
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+    lookup_field = 'cart_id'
+
+    def perform_create(self, serializer):
+        # Automatically associate the cart with the authenticated user
+        serializer.save(user=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        # Fetch the cart object
+        cart = self.get_object()
+
+        # Only allow updating the user if the cart is not already linked to a user
+        if cart.user and cart.user != request.user:
+            return Response(
+                {
+                'status': status.HTTP_403_FORBIDDEN,
+                'message': "This cart is already associated with another user.",
+                'data': []
+                }, status=status.HTTP_403_FORBIDDEN)
+
+        # Associate the cart with the authenticated user
+        cart.user = request.user
+        cart.save()
+
+        serializer = self.get_serializer(cart)
+        
+        response = {
+            'status': status.HTTP_200_OK,
+            'messgae': 'User Binded with cart',
+            'data': serializer.data 
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+'''
+now in my view i have a create method. Now i want the create logic in serializer and in the view i only want to 
+pass the data back to serilaizer and the data returned by the serializer to view and from view to the postman
+
+i want the list method to only show data based on cart it. wul pass cart id to the url and then fetch that cart details using the cart id
+when i create a cart, item should be added to it
+--------------------------------------------------
+class CartItemPostSet(viewsets.ModelViewSet):
+    authentication_classes = [JWTAuthentication]
+    queryset = CartItem.objects.all()
+    serializer_class = CartItemPostSerializer 
+    permission_classes = [AllowAny]
+    http_method_names = ['post']
+    
+    def create(self, request, *args, **kwargs):
+        user = request.user if request.user.is_authenticated else None
+        cart_id = self.kwargs.get('cart_id')
         # Get or create the cart
         cart, created = Cart.objects.get_or_create(user=user, cart_id=cart_id)
 
@@ -54,7 +147,6 @@ class CartItemPostSet(viewsets.ModelViewSet):
             item_serializer = CartItemPostSerializer(data=item_data)
             if item_serializer.is_valid():
                 variant_id = item_data['variant']
-                print('variant_id',variant_id)
                 variant = get_object_or_404(ProductVariants, pk=variant_id) 
                 
                 cart_item = CartItem(
@@ -101,78 +193,7 @@ class CartItemPostSet(viewsets.ModelViewSet):
             'message': 'Items added to cart successfully.',
             'cart': response_data
         }, status=status.HTTP_201_CREATED)
-        
-class AssociateUserWithCart(viewsets.ModelViewSet):
-    '''
-    This view binds the user to a particular cart id 
-    When the cart id is created without a user.
-    '''
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
-    queryset = Cart.objects.all()
-    serializer_class = CartSerializer
-    lookup_field = 'cart_id'
-
-    def perform_create(self, serializer):
-        # Automatically associate the cart with the authenticated user
-        serializer.save(user=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        # Fetch the cart object
-        cart = self.get_object()
-
-        # Only allow updating the user if the cart is not already linked to a user
-        if cart.user and cart.user != request.user:
-            return Response(
-                {
-                'status': status.HTTP_403_FORBIDDEN,
-                'message': "This cart is already associated with another user.",
-                'data': []
-                }, status=status.HTTP_403_FORBIDDEN)
-
-        # Associate the cart with the authenticated user
-        cart.user = request.user
-        cart.save()
-
-        serializer = self.get_serializer(cart)
-        
-        response = {
-            'status': status.HTTP_200_OK,
-            'messgae': 'User Binded with cart',
-            'data': serializer.data 
-        }
-        return Response(response, status=status.HTTP_200_OK)
-
-'''
-if suppose i want this view to work for guest and authentciated users both. If there is no token then consider the user as guest and if there is token then consider assocaite 
-the user to that cart
-
-
-i want the list method to only show data based on cart it. wul pass cart id to the url and then fetch that cart details using the cart id
-when i create a cart, item should be added to it
-def create(self, request, *args, **kwargs):
-        try:
-            items_data = request.data.get('items',[])
-            serializer = self.get_serializer(data=items_data, many=True, context={'request': request})
-            if serializer.is_valid(raise_exception=True):
-                response_data = serializer.save()
-                # headers = self.get_success_headers(serializer.data)
-                return Response({
-                    "status": status.HTTP_201_CREATED,
-                    "message": 'Cart Items Created Successfully',
-                    "data": response_data
-                }, status=status.HTTP_201_CREATED)
-            return Response({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "message": serializer.errors,
-                "data": [{}]
-            }, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "message": str(e),
-                "data": [{}]
-            }, status=status.HTTP_400_BAD_REQUEST)
+        --------------------------------
 -----------------------------------------------------
 class CartItemViewSet(generics.RetrieveAPIView):
     queryset = CartItem.objects.all()
