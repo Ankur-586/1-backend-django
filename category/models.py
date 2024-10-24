@@ -42,7 +42,3 @@ class Category(models.Model):
             subcategory.save()
             subcategory.unhide_all_subcategories()  # Recursively unhide subcategories
         
-'''
-from category.models import Category
-category = Category.objects.first() 
-'''

@@ -2,7 +2,10 @@ from rest_framework.exceptions import APIException
 from rest_framework import status
 
 from django.utils.encoding import force_str
+from django.conf import settings
 from django.http import JsonResponse
+
+''' ------------------------------------------------------------------ '''
 
 class CustomValidation(APIException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -14,6 +17,21 @@ class CustomValidation(APIException):
             self.detail = force_str(detail)
         else: 
             self.detail = {'detail': force_str(self.default_detail)}
+            
+''' ------------------------------------------------------------------ '''
+
+def construct_full_url(relative_url):
+    """
+    Constructs a full URL given a relative URL.
+    
+    :param relative_url: The relative URL of the media file.
+    :return: The full URL or None if the relative_url is empty.
+    """
+    if relative_url:
+        return f"{settings.BASE_URL}{relative_url}"
+    return None
+
+''' ------------------------------------------------------------------ '''
 
 def custom_page_not_found_view(request, exception=None):
     '''

@@ -194,35 +194,6 @@ class CartItemPostSet(viewsets.ModelViewSet):
             'cart': response_data
         }, status=status.HTTP_201_CREATED)
         --------------------------------
------------------------------------------------------
-class CartItemViewSet(generics.RetrieveAPIView):
-    queryset = CartItem.objects.all()
-    serializer_class = CartItemSerializer 
-    # authentication_classes = [IsAuthenticated]
-    
-    def list(self, request, *args, **kwargs):
-        try:
-            queryset = self.filter_queryset(self.get_queryset())
-            page = self.paginate_queryset(queryset)
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                result = self.get_paginated_response(serializer.data)
-                data = result.data # pagination data
-            else:
-                serializer = self.get_serializer(queryset, many=True)
-                data = serializer.data
-            payload = {
-                "status": status.HTTP_200_OK, 
-                "message": 'All Cart Details', 
-                "data": data
-            }
-            return Response(payload ,status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                "status": status.HTTP_400_BAD_REQUEST,
-                "message": str(e),
-                "data": []
-            }, status=status.HTTP_400_BAD_REQUEST)
 '''
 
 # all possible Shopping Cart (E-commerce) conditions 

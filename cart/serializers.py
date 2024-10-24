@@ -2,21 +2,21 @@ from rest_framework import serializers,status
 
 from .models import Cart, CartItem
 from product.models import ProductVariants
-from django.utils import timezone
-
 from core.utils import CustomValidation
+
+from django.utils import timezone
 
 class CartItemSerializer(serializers.ModelSerializer):
     '''
-    This serializer is being used in the CartSerializer Below
+    -> This serializer is being used in the CartSerializer Below and is only for read only
+
+    -> SerializerMethodField is read only
     '''
     variant = serializers.SerializerMethodField()
-    variant_id = serializers.PrimaryKeyRelatedField(queryset=ProductVariants.objects.all(), write_only=True)
-    # quantity = serializers.IntegerField()
 
     class Meta:
         model = CartItem
-        fields = ['variant_id','variant']
+        fields = ['variant']
     
     def get_variant(self, obj):
         '''
@@ -28,33 +28,50 @@ class CartItemSerializer(serializers.ModelSerializer):
         price = product_variant.price
         quantity = obj.quantity
         item_total = obj.calculate_price()
-
+        product = {
+            'id': obj.variant.product.id,
+            'product_name': obj.variant.product.name,
+            'product_image': product_variant.product.thumbnail.url if product_variant.product.thumbnail.url else None
+        }
         return {
             'id': product_variant.pk,
             'variant_title': variant_name,
             'thumbnail': thumbnail,
             'item_price': price,
             'quantity':quantity,
-            'item_total':item_total
+            'item_total':item_total,
+            'product': product
         }
 
 class CartSerializer(serializers.ModelSerializer):
     cart_items = CartItemSerializer(many=True)
     user = serializers.SerializerMethodField()
-    created_at = serializers.SerializerMethodField()
+    timestamps = serializers.SerializerMethodField()
     
     class Meta:
         model = Cart
-        fields = ['cart_id', 'created_at', 'updated_at', 'user','cart_items']
+        fields = ['cart_id','timestamps', 'user','cart_items']
     
-    def get_created_at(self, obj):
+    def get_timestamps(self, obj):
+        # print(dir(obj))
         """
-        This function converts timestamp in ISO 8601 format to a properly formatted datetime string.
+        This function converts created_at and updated_at timestamps to properly formatted datetime strings.
         """
+        timestamps = {}
+        
         if obj.created_at:
-            local_time = timezone.localtime(obj.created_at)
-            return local_time.strftime('%Y-%m-%d %H:%M:%S')
-        return 'None'
+            local_created_time = timezone.localtime(obj.created_at)
+            timestamps['created_at'] = local_created_time.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            timestamps['created_at'] = None
+
+        if obj.updated_at:
+            local_updated_time = timezone.localtime(obj.updated_at)
+            timestamps['updated_at'] = local_updated_time.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            timestamps['updated_at'] = None
+
+        return timestamps
     
     def get_user(self, obj):
         user_info = obj.user
@@ -66,6 +83,9 @@ class CartSerializer(serializers.ModelSerializer):
         return None
 
 class CartItemPostSerializer(serializers.ModelSerializer):
+    '''
+    PrimaryKeyRelatedField allows you to write the primary key of the ProductVariants when creating or updating a CartItem
+    '''
     variant = serializers.PrimaryKeyRelatedField(queryset=ProductVariants.objects.all(), write_only=True)
     quantity = serializers.IntegerField(required=False, default=1)
     
@@ -82,14 +102,6 @@ class CartItemPostSerializer(serializers.ModelSerializer):
             raise CustomValidation("Quantity can't be at more than 5", status_code=status.HTTP_400_BAD_REQUEST)
         return value
     
-
-    # def to_internal_value(self, data):
-    #     variant_id = data.get('variant')
-    #     print(variant_id)
-    #     if not ProductVariants.objects.filter(pk=variant_id).exists():
-    #         raise CustomValidation("No product with the given id was found", status_code=status.HTTP_400_BAD_REQUEST)
-    #     return super().to_internal_value(data)
-    
     def validate_variant(self, value):
         try:
             variant = ProductVariants.objects.get(pk=value.pk)
@@ -97,7 +109,7 @@ class CartItemPostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("No product with the given ID was found.")
 
         if not variant.is_active:
-            raise serializers.ValidationError("The selected variant is out of stock.")
+            raise serializers.ValidationError("The selected variant is out of stock!!")
         
         return value
 
@@ -149,6 +161,13 @@ class CartItemPostSerializer(serializers.ModelSerializer):
         }
     
 '''
+def to_internal_value(self, data):
+    variant_id = data.get('variant')
+    print(variant_id)
+    if not ProductVariants.objects.filter(pk=variant_id).exists():
+        raise CustomValidation("No product with the given id was found", status_code=status.HTTP_400_BAD_REQUEST)
+    return super().to_internal_value(data)
+
 def create(self, validated_data):
         request = self.context['request']
         user = request.user if request.user.is_authenticated else None

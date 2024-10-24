@@ -6,7 +6,6 @@ from django.db.models import Q
 from .models import Category
 from .serializers import CategorySerializer
 
-# View to get all categories with their subcategories
 class CategoryListView(generics.ListAPIView):
     queryset = Category.objects.filter(Q(parent_category__isnull=True) & Q(is_active=True))
     serializer_class = CategorySerializer
